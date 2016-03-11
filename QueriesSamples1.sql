@@ -13,6 +13,17 @@ go
 select  MaritalStatus from AdventureWorks2014.HumanResources.Employee group by MaritalStatus
 
 --level 1
+--simple join between two related tables with where clause and order by
+--find title, name, surname, birthdate, gender, job title of all the married employees
+--order by birthdate ascending
+select  p.Title, p.FirstName, p.LastName, e.BirthDate, e.JobTitle, e.MaritalStatus 
+from  AdventureWorks2014.HumanResources.Employee as e
+join AdventureWorks2014.Person.Person as p
+on p.BusinessEntityID = e.BusinessEntityID
+where e.MaritalStatus like('M')
+order by e.BirthDate asc
+
+--level 1
 --simple INNER join between two table with no where clause
 --INNER is implicit!
 --find all the person data for all employees
@@ -38,21 +49,15 @@ on bea.BusinessEntityID = p.BusinessEntityID
 left join AdventureWorks2014.Person.[Address] a
 on a.AddressID = bea.AddressID
 
-
---level 1
---simple join between two related tables with where clause and order by
---find title, name, surname, birthdate, gender, job title of all the married employees
---order by birthdate ascending
-select  p.Title, p.FirstName, p.LastName, e.BirthDate, e.JobTitle, e.MaritalStatus 
-from  AdventureWorks2014.HumanResources.Employee as e
-join AdventureWorks2014.Person.Person as p
-on p.BusinessEntityID = e.BusinessEntityID
-where e.MaritalStatus like('M')
-order by e.BirthDate asc
- 
 --level 2
---simple join 
---find title, name, surname, gender, job title of all the married employees over the age of forty
+--simple group by
+--find all the possible job titkes for employees
+select JobTitle from AdventureWorks2014.HumanResources.Employee group by JobTitle
+ 
+
+--level 3 (CTE and in-memory table)
+--for each job title find the employee with the max annual pay
+
 
 
 --simple join level 2
