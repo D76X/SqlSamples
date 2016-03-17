@@ -51,14 +51,44 @@ on a.AddressID = bea.AddressID
 
 --level 2
 --simple group by
---find all the possible job titkes for employees
-select JobTitle from AdventureWorks2014.HumanResources.Employee group by JobTitle
- 
+--find all the possible job titles for employees
+select JobTitle from AdventureWorks2014.HumanResources.Employee group by JobTitle;
 
---level 3 (CTE and in-memory table)
+--level1
+--convert the group by query above into a CTE
+--notice the ; on the end of the preceeding query!
+--a ; must preceed the WITH keyword
+--this is a quirk of SSMS syntax highlighting
+with 
+	Job_Titles(Job_title)
+	as
+	(
+	select JobTitle 
+	from AdventureWorks2014.HumanResources.Employee 
+	group by JobTitle
+	)
+select Job_title
+from Job_Titles;
+
+--level 3 (use a CTE)
+--for each job title find the MAX number of Vacation Hours
+with 
+	Job_Titles(Job_title)
+	as
+	(
+	select JobTitle 
+	from AdventureWorks2014.HumanResources.Employee 
+	group by JobTitle
+	)
+select e.JobTitle, MAX(e.VacationHours)
+from AdventureWorks2014.HumanResources.Employee as e
+join Job_Titles on e.JobTitle like Job_title 
+group by e.JobTitle;
+
+--level 3 (use a CTE)
 --for each job title find the employee with the max annual pay
-
-
 
 --simple join level 2
 --find title, name, surname, gender, job title of all the unmarried employees over the age of thirty
+
+--use an in-memory table instead of a CTE
