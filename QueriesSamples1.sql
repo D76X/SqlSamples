@@ -87,6 +87,62 @@ group by e.JobTitle;
 
 --level 3 (use a CTE)
 --for each job title find the employee with the max annual pay
+--1)find the annual pay of all employees and place it in a CTE
+--2)join to the table that gives all the grouped job roles
+--3)pick the employee that foe each job role has the max pay
+
+--PART1 find the annual pay of all employees
+-------------------------------------------------------------------
+--This table holds the ID of the employee the rate and the frequency
+--we are goimg to assume the frequency is in hours
+select * from AdventureWorks2014.HumanResources.EmployeePayHistory
+
+--we are going to assume a flat base base of 40h/week for 52 weeks/year = 2080h/year
+select 
+p.FirstName + ' ' + p.LastName as 'Full Name',
+e.JobTitle,
+h.Rate*2080/h.PayFrequency 'Flat Annual Pay'
+from AdventureWorks2014.HumanResources.Employee e
+join AdventureWorks2014.HumanResources.EmployeePayHistory h 
+on e.BusinessEntityID = h.BusinessEntityID
+join AdventureWorks2014.Person.Person as p
+on p.BusinessEntityID = e.BusinessEntityID 
+order by [Flat Annual Pay] desc;
+
+--now piece the two together using the CTE syntax
+--notice the ; terminating the preceeding line to keep the SSMS editor happy
+--notice that in the first CTE the order by has been left out as it is no longer necessary
+--notica that two CTEs are also chained otgether separated bu a comma 
+with 
+ MaxAnnualSalary(ID,FullName, JobTitle, FlatAnnualPay)
+ as
+ (
+ 	select 
+	p.BusinessEntityID,
+	p.FirstName + ' ' + p.LastName as 'Full Name',
+	e.JobTitle,
+	h.Rate*2080/h.PayFrequency 'Flat Annual Pay'
+	from AdventureWorks2014.HumanResources.Employee e
+	join AdventureWorks2014.HumanResources.EmployeePayHistory h 
+	on e.BusinessEntityID = h.BusinessEntityID
+	join AdventureWorks2014.Person.Person as p
+	on p.BusinessEntityID = e.BusinessEntityID 
+ ),  
+ Job_Titles(Job_title)
+ as
+ (
+	select JobTitle 
+	from AdventureWorks2014.HumanResources.Employee 
+	group by JobTitle
+  )
+select mas.ID, mas.FullName, mas.JobTitle , MAX(mas.FlatAnnualPay) as MaxAnnualPay
+from MaxAnnualSalary mas
+join Job_Titles jbts
+on jbts.Job_title = mas.JobTitle
+group by mas.ID, mas.FullName, mas.JobTitle, 
+
+
+
 
 --simple join level 2
 --find title, name, surname, gender, job title of all the unmarried employees over the age of thirty
