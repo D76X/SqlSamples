@@ -55,7 +55,7 @@ on a.AddressID = bea.AddressID
 select JobTitle from AdventureWorks2014.HumanResources.Employee group by JobTitle;
 
 --level1
---convert the group by query above into a CTE
+--convert the group-by query above into a CTE
 --notice the ; on the end of the preceeding query!
 --a ; must preceed the WITH keyword
 --this is a quirk of SSMS syntax highlighting
@@ -89,7 +89,7 @@ group by e.JobTitle;
 --for each job title find the employee with the max annual pay
 --1)find the annual pay of all employees and place it in a CTE
 --2)join to the table that gives all the grouped job roles
---3)pick the employee that foe each job role has the max pay
+--3)pick the employee that for each job role has the max pay
 
 --PART1 find the annual pay of all employees
 -------------------------------------------------------------------
@@ -97,7 +97,7 @@ group by e.JobTitle;
 --we are goimg to assume the frequency is in hours
 select * from AdventureWorks2014.HumanResources.EmployeePayHistory
 
---we are going to assume a flat base base of 40h/week for 52 weeks/year = 2080h/year
+--we are going to assume a flat base rate of 40h/week for 52 weeks/year = 2080h/year
 select 
 p.FirstName + ' ' + p.LastName as 'Full Name',
 e.JobTitle,
@@ -114,7 +114,7 @@ order by [Flat Annual Pay] desc;
 --notice that in the first CTE the order by has been left out as it is no longer necessary
 --notica that two CTEs are also chained otgether separated bu a comma 
 with 
- MaxAnnualSalary(ID,FullName, JobTitle, FlatAnnualPay)
+ MaxAnnualSalary(ID, FullName, JobTitle, FlatAnnualPay)
  as
  (
  	select 
@@ -135,14 +135,94 @@ with
 	from AdventureWorks2014.HumanResources.Employee 
 	group by JobTitle
   )
-select mas.ID, mas.FullName, mas.JobTitle , MAX(mas.FlatAnnualPay) as MaxAnnualPay
+select mas.ID, mas.FullName, mas.JobTitle, mas.FlatAnnualPay
 from MaxAnnualSalary mas
 join Job_Titles jbts
 on jbts.Job_title = mas.JobTitle
-group by mas.ID, mas.FullName, mas.JobTitle, 
 
+--now pick only the highest paid per each job title
+with 
+ MaxAnnualSalary(ID, FullName, JobTitle, FlatAnnualPay)
+ as
+ (
+ 	select 
+	p.BusinessEntityID,
+	p.FirstName + ' ' + p.LastName as 'Full Name',
+	e.JobTitle,
+	h.Rate*2080/h.PayFrequency 'Flat Annual Pay'
+	from AdventureWorks2014.HumanResources.Employee e
+	join AdventureWorks2014.HumanResources.EmployeePayHistory h 
+	on e.BusinessEntityID = h.BusinessEntityID
+	join AdventureWorks2014.Person.Person as p
+	on p.BusinessEntityID = e.BusinessEntityID 
+ ),  
+ Job_Titles(Job_title)
+ as
+ (
+	select JobTitle 
+	from AdventureWorks2014.HumanResources.Employee 
+	group by JobTitle
+  )
+select 
+mas.ID, mas.JobTitle, MAX(mas.FlatAnnualPay) as MaxAnnualPay
+from MaxAnnualSalary mas
+join Job_Titles jbts
+on jbts.Job_title = mas.JobTitle
+group by 
+mas.ID, mas.FullName, mas.JobTitle;
 
+-------------------------------------------------------------------------------------------------------
+--the previous query gives the highest paid job title but it cannot include the name of the employee
+--to whom the highest salary is paid. This is because of the GROUP BY. If the name of the employee is
+--added to the GROUP BY clause then you cannot loger find the highest salary!
+--Let's fixed this with another CTE using the ID of the business entity to put the two part together
+--Notice that some of the rows in the result are still duplicated as these people have the same job title 
+--and earn the same maximum salary for it. 
+with 
+ MaxAnnualSalary(ID, JobTitle, FlatAnnualPay)
+ as
+ (
+ 	select 
+	p.BusinessEntityID,	e.JobTitle,	h.Rate*2080/h.PayFrequency 'Flat Annual Pay'
+	from AdventureWorks2014.HumanResources.Employee e
+	join AdventureWorks2014.HumanResources.EmployeePayHistory h 
+	on e.BusinessEntityID = h.BusinessEntityID
+	join AdventureWorks2014.Person.Person as p
+	on p.BusinessEntityID = e.BusinessEntityID 
+ ),  
+ Job_Titles(Job_title)
+ as
+ (
+	select JobTitle 
+	from AdventureWorks2014.HumanResources.Employee 
+	group by JobTitle
+  ),
+  MaximumSalaryAggreagte(ID, JobTitle, MaxAnnualSalary)
+  as
+  (
+    select 
+	mas.ID, mas.JobTitle, MAX(mas.FlatAnnualPay) as MaxAnnualPay
+	from MaxAnnualSalary mas
+	join Job_Titles jbts
+	on jbts.Job_title = mas.JobTitle
+	group by mas.ID, mas.JobTitle
+  ),
+  Employees(ID, FullName)
+  as
+  (
+    select 
+	p.BusinessEntityID,	p.FirstName + ' ' + p.LastName as 'Full Name'	
+	from AdventureWorks2014.HumanResources.Employee e	
+	join AdventureWorks2014.Person.Person as p
+	on p.BusinessEntityID = e.BusinessEntityID
+  )
+select msa.ID, e.FullName, msa.JobTitle, msa.MaxAnnualSalary
+from MaximumSalaryAggreagte msa
+join Employees e 
+on e.ID = msa.ID
+order by MaxAnnualSalary desc
 
+------------------------------------------------------------------------------------------------------
 
 --simple join level 2
 --find title, name, surname, gender, job title of all the unmarried employees over the age of thirty
