@@ -80,7 +80,7 @@ with
 	from AdventureWorks2014.HumanResources.Employee 
 	group by JobTitle
 	)
-select e.JobTitle, MAX(e.VacationHours)
+select e.JobTitle, MAX(e.VacationHours) 'Longest Holiday'
 from AdventureWorks2014.HumanResources.Employee as e
 join Job_Titles on e.JobTitle like Job_title 
 group by e.JobTitle;
@@ -94,7 +94,7 @@ group by e.JobTitle;
 --PART1 find the annual pay of all employees
 -------------------------------------------------------------------
 --This table holds the ID of the employee the rate and the frequency
---we are goimg to assume the frequency is in hours
+--we are going to assume the frequency is in hours
 select * from AdventureWorks2014.HumanResources.EmployeePayHistory
 
 --we are going to assume a flat base rate of 40h/week for 52 weeks/year = 2080h/year
@@ -112,7 +112,7 @@ order by [Flat Annual Pay] desc;
 --now piece the two together using the CTE syntax
 --notice the ; terminating the preceeding line to keep the SSMS editor happy
 --notice that in the first CTE the order by has been left out as it is no longer necessary
---notica that two CTEs are also chained otgether separated bu a comma 
+--notice that two CTEs are also chained together separated by a comma 
 with 
  MaxAnnualSalary(ID, FullName, JobTitle, FlatAnnualPay)
  as
