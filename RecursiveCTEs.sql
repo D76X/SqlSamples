@@ -1,5 +1,20 @@
 use [AdventureWorks2014]
 
+----=======================================================================================================================
+-- https://www.essentialsql.com/recursive-ctes-explained/
+--a simple recursive CTE that counts to 50
+WITH   cte
+AS     (SELECT 1 AS n -- anchor member
+        UNION ALL
+        SELECT n + 1 -- recursive member
+        FROM   cte
+        WHERE  n < 50 -- terminator
+       )
+SELECT n
+FROM   cte;
+
+--=======================================================================================================================
+
 -------------------------------------------------------------------------------------------------------------------------
 -- An incorrectly composed recursive CTE may cause an infinite loop!
 -- When testing the results of a recursive query, you can limit the number of recursion levels allowed for a specific 
@@ -68,9 +83,31 @@ order by cte2.TrackId, cte2.Step
 
 --==================================================================================================
 
+use [AdventureWorks2014]
+
 --SCENARIO 2
 --parent product has one or more components and those components may, in turn, have subcomponents or 
 --may be components of other parents.
+
+-- https://www.essentialsql.com/recursive-ctes-explained/
+--The BillOfMaterials table contains pairs of ProductID numbers
+--Production.BillOfMaterials holds 
+--FK ProductsAssemblyID to Production.Product.ProductID => The sub assembly containing the part (parent)
+--FK ComponentID to Production.Product.ProductID =>  Part in the sub assembly (child)
+
+--we want a list of a product's sub-assemblies and its constituent parts
+--The products in BillOfMaterial with ID=NULL are teh top level parts
+select * from Production.BillOfMaterials where ProductAssemblyID IS NULL
+
+--better
+select p.ProductID, p.Name, p.Color 
+from Production.Product as p
+inner join
+Production.BillOfMaterials
+
+
+
+
 
 --==================================================================================================
 
