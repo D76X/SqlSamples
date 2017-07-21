@@ -90,23 +90,60 @@ use [AdventureWorks2014]
 --may be components of other parents.
 
 -- https://www.essentialsql.com/recursive-ctes-explained/
+--all products (parts) are listed in the Product table
 --The BillOfMaterials table contains pairs of ProductID numbers
 --Production.BillOfMaterials holds 
 --FK ProductsAssemblyID to Production.Product.ProductID => The sub assembly containing the part (parent)
 --FK ComponentID to Production.Product.ProductID =>  Part in the sub assembly (child)
 
 --we want a list of a product's sub-assemblies and its constituent parts
---The products in BillOfMaterial with ID=NULL are teh top level parts
-select * from Production.BillOfMaterials where ProductAssemblyID IS NULL
+--The products in BillOfMaterial with ProductAssemblyID=NULL are the top level parts
+select * from Production.BillOfMaterials bom where bom.ProductAssemblyID IS NULL
 
---better
-select p.ProductID, p.Name, p.Color 
-from Production.Product as p
-inner join
-Production.BillOfMaterials
+--we can also extract the name of the top-level assembly
+select p.Name ,bom.* from Production.BillOfMaterials bom 
+join Production.Product p 
+on p.ProductID = bom.ComponentID
+where bom.ProductAssemblyID IS NULL
 
-
-
+--For example BillOfMaterialsID=3088, ComponentID=754 is a top level assembly
+--as its ProductAssemblyID=NULL
+------------------------------------------------------------------------------
+--Given a top level assembly find all the subasseblies and subcomponents
+--it is important to notice 
+with cte_bom(ProductID, ProductLevel, ProductAssemblyID, Name, Color, Quantity, Sort) as
+(
+ --anchor
+	select 
+		p.ProductID, 
+		1, 
+		bom.ProductAssemblyID, 
+		p.Name, 
+		p.Color, 
+		bom.PerAssemblyQty, 
+		cast (p.Name as varchar(100))  
+	from Production.Product p
+	join Production.BillOfMaterials bom
+	on bom.ComponentID = p.ProductID
+	where bom.BillOfMaterialsID = 3088
+	union all
+ --recursion
+	select 
+		p.ProductID, 
+		cte_bom.ProductLevel+1, 
+		cte_bom.ProductID, 
+		p.Name, 
+		p.Color, 
+		bom.PerAssemblyQty, 
+		cast(cte_bom.Sort+'\'+p.Name as varchar(100))
+	from cte_bom
+	join Production.BillOfMaterials bom
+	on bom.ProductAssemblyID = cte_bom.ProductID
+	join Production.Product p
+	on bom.ComponentID = p.ProductID 
+)
+--cte selection
+select ProductID, ProductLevel, ProductAssemblyID, Name, Color, Quantity, Sort from cte_bom order by Sort
 
 
 --==================================================================================================
