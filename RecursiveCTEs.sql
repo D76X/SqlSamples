@@ -81,7 +81,7 @@ select * from UserCte1
 select * from UserCte2 cte2
 order by cte2.TrackId, cte2.Step
 
---==================================================================================================
+--=======================================================================================================
 
 use [AdventureWorks2014]
 
@@ -110,7 +110,14 @@ where bom.ProductAssemblyID IS NULL
 --as its ProductAssemblyID=NULL
 ------------------------------------------------------------------------------
 --Given a top level assembly find all the subasseblies and subcomponents
---it is important to notice 
+
+--it is important to notice:
+--The level is incremented by one upon each recursive query definition call
+
+--Sort, breath-first, depth-first >>
+--The Sort field is used to order the rows in depth-first fashion insead of the breath-first
+--fashion that is the natural way fo returning rows from the recusive CTE.  
+------------------------------------------------------------------------------
 with cte_bom(ProductID, ProductLevel, ProductAssemblyID, Name, Color, Quantity, Sort) as
 (
  --anchor
@@ -146,5 +153,44 @@ with cte_bom(ProductID, ProductLevel, ProductAssemblyID, Name, Color, Quantity, 
 select ProductID, ProductLevel, ProductAssemblyID, Name, Color, Quantity, Sort from cte_bom order by Sort
 
 
---==================================================================================================
+--=======================================================================================================
+
+--improved version where we use the level to change the indentation on the Name Column
+with cte_bom(ProductID, ProductLevel, ProductAssemblyID, Name, Color, Quantity, Sort) as
+(
+ --anchor
+	select 
+		p.ProductID, 
+		1, 
+		bom.ProductAssemblyID, 
+		CAST (P.Name AS VARCHAR (100)), 
+		p.Color, 
+		bom.PerAssemblyQty, 
+		cast (p.Name as varchar(100))  
+	from Production.Product p
+	join Production.BillOfMaterials bom
+	on bom.ComponentID = p.ProductID
+	where bom.BillOfMaterialsID = 3088
+	union all
+ --recursion
+	select 
+		p.ProductID, 
+		cte_bom.ProductLevel+1, 
+		cte_bom.ProductID, 
+		cast (replicate('|---', cte_bom.ProductLevel)+p.Name as varchar(100)), 
+		p.Color, 
+		bom.PerAssemblyQty, 
+		cast(cte_bom.Sort+'\'+p.Name as varchar(100))
+	from cte_bom
+	join Production.BillOfMaterials bom
+	on bom.ProductAssemblyID = cte_bom.ProductID
+	join Production.Product p
+	on bom.ComponentID = p.ProductID 
+)
+--cte selection
+select ProductID, ProductLevel, ProductAssemblyID, Name, Color, Quantity, Sort from cte_bom 
+order by Sort
+
+--=======================================================================================================
+
 
