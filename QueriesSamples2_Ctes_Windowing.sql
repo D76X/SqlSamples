@@ -118,11 +118,26 @@ order by TerritoryID
 --This can be done by Territory and Ship Method
 select distinct 
 	TerritoryID, ShipMethodID,
-	count(SubTotal) over (partition by TerritoryID, ShipMethodID) 'count',
-	sum(SubTotal) over (partition by TerritoryID, ShipMethodID) 'Sums',
-	avg(SubTotal) over (partition by TerritoryID, ShipMethodID) 'avg'	
+	count(SubTotal) over (partition by TerritoryID, ShipMethodID) 'COUNT',
+	sum(SubTotal) over (partition by TerritoryID, ShipMethodID) 'SUM',
+	avg(SubTotal) over (partition by TerritoryID, ShipMethodID) 'AVG',
+	min(SubTotal) over (partition by TerritoryID, ShipMethodID) 'MIN',
+	max(SubTotal) over (partition by TerritoryID, ShipMethodID) 'MAX'	
 	from Sales.SalesOrderHeader 
 order by TerritoryID, ShipMethodID
+
+--we may also rank the rersult on a partition per territory by using any of the aggregate values
+--we must use subqueries for this
+	(select distinct 
+		TerritoryID, ShipMethodID,
+		count(SubTotal) over (partition by TerritoryID, ShipMethodID) 'COUNT',
+		sum(SubTotal) over (partition by TerritoryID, ShipMethodID) 'SUM',
+		avg(SubTotal) over (partition by TerritoryID, ShipMethodID) 'AVG',
+		min(SubTotal) over (partition by TerritoryID, ShipMethodID) 'MIN',
+		max(SubTotal) over (partition by TerritoryID, ShipMethodID) 'MAX'	
+		from Sales.SalesOrderHeader 
+	order by TerritoryID, ShipMethodID)
+--ROW_NUMBER() over (partition by TerritoryID order by ShipMethodID) 'RANK'
 
 --================================================================================================================
 
